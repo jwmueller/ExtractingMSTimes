@@ -1,0 +1,1 @@
+Java package to extract inter coalescence times and compute E(T_j*T_k) from coalescent simulations produced by MS, which are in Newick tree format.  MS source code must first be modified to display all times to 34 decimal places (done by modifying the two printf statements with ':' in ms.c).
