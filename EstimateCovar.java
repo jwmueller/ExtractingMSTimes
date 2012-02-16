@@ -35,7 +35,7 @@ public class EstimateCovar {
 	}
       	double estimatedETiTj = average(ETiTjValues);
 	System.out.printf("Estimated E(T_iT_j) = %.34f", estimatedETiTj);
-	System.out.println();
+	System.out.println("\n");
     }
 
     /** Returns E(TiTj) calculated from a TreeNode representing the
