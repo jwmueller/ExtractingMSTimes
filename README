@@ -1,1 +1,7 @@
-Java package to extract inter coalescence times and compute E(T_j*T_k) from coalescent simulations produced by MS, which are in Newick tree format.  MS source code must first be modified to display all times to 34 decimal places (done by modifying the two printf statements with ':' in ms.c).
+Java package to extract inter-coalescence times T_1, …, T_n (S_1, …, S_n in Polanski & Kimmel, 2003) and compute E(T_j*T_k) from coalescent simulations produced by MS, which are in Newick tree format.  MS source code must first be modified to display all times to 34 decimal places (done by modifying the two printf statements with ':' in ms.c).  Coalescence times are converted from MS's units of 4*N_0 generations to units of 2*N_0 generations.
+
+To compile, cd to ExtractingMSTimes and invoke 'make'.
+
+To run, use: java EstimateCovar <FileWithMSOutput>.
+
+Variability of the estimate can be observed by generating trees under a no-growth model in MS (e.g. 'ms 100 10000 -T') and then computing the covariance between inter-coalescence times: E(T_jT_k) - E(T_j) * E(T_k), which is expected to be 0.
