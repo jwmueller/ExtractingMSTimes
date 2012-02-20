@@ -12,13 +12,17 @@ import java.util.Collections;
 
 public class EstimateCovar {
 
-    /** Command: "java estimateCovar <File>" will return the E(T_iT_j)
-     *  estimate for the intercoalescence times in that file. */
+    /** Command: "java estimateCovar <File> > <Outfile>" will return the E(T_iT_j)
+     *  estimates for the intercoalescence times in that file, and write the results
+     *  as a list, which can be piped to a specified output file.  The first n - 1 entries 
+     *  correspond to E(T_2*T_j) for j = 2,...,n, the next n - 1 entries correspond 
+     *  to E(T_3*T_j) for j = 2,...,n, etc. */
     public static void main(String[] args) throws Exception {
 	FileReader fr = new FileReader(args[0]);
 	BufferedReader br = new BufferedReader(fr);
 	String line = "";
-	ArrayList<Double> ETiTjValues = new ArrayList<Double>();
+	double samplecounter = 0; // keeps track of the number of samples.
+	ArrayList<Double> ETiTjSums = new ArrayList<Double>(); // sums of E(TiTj) from each sample.
 	// Skip header of file //
        	while (!line.equals("//")) {
 	    line = br.readLine();
@@ -29,18 +33,25 @@ public class EstimateCovar {
 		// Only consider lines representing Newick trees //
 		NewickTree tree = new NewickTree();
 		TreeNode root = tree.build(line);
-		// Compute E(TiTj) from the above tree and add it to list //
-		ETiTjValues.add(new Double(computeETiTj(root)));
+		// Compute E(TiTj) values from the above tree and add them to ones in the list //
+		computeETiTj(root, ETiTjSums, samplecounter);
+		samplecounter++;
 	    }
 	}
-      	double estimatedETiTj = average(ETiTjValues);
-	System.out.printf("Estimated E(T_iT_j) = %.34f", estimatedETiTj);
-	System.out.println("\n");
+	// Divide sums of E(T_i*T_j) values by number of samples to get average //
+	for (int i = 0; i < ETiTjSums.size(); i++) {
+	    double sum = ETiTjSums.get(i).doubleValue();
+	    double average = sum / samplecounter;
+	    // Report this average //
+	    System.out.printf("%.34f", average);
+	    System.out.println();
+	}
     }
 
-    /** Returns E(TiTj) calculated from a TreeNode representing the
-     *  ROOT of a coalescence tree. */
-    public static double computeETiTj(TreeNode root) {
+    /** Calculates E(TiTj) values from a TreeNode representing the ROOT of a
+     *  coalescence tree and adds them to SUM_LIST.  First determines whether
+     *  this list is empty by checking the COUNTER. */
+    public static void computeETiTj(TreeNode root, ArrayList<Double> sum_list, double counter) {
 	ArrayList<Double> coalescence_times = new ArrayList<Double>();
 	getTimes(root, coalescence_times); // fill list with times from tree.
 	Collections.sort(coalescence_times);
@@ -59,24 +70,43 @@ public class EstimateCovar {
 	    }
 	    intercoalescence_times.add(new Double(interval));
 	}
-	// Use this list to compute E(TiTj) and return it //
-	return expectedProduct(intercoalescence_times);
+	// Use this list to compute E(TiTj) values and them to the list of sums //
+	updateList(intercoalescence_times, sum_list, counter);
     }
 
-    /** Returns the expecated value of the product of a pair X_i, X_j
-     *  (with i <= j) in the list DOUBLES. */
-    public static double expectedProduct(ArrayList<Double> doubles) {
-	double sum = 0; // records the sum of the pairwise products.
-	double count = 0; // counts the number of pairs.
-	for (int i = 0; i < doubles.size(); i++) {
-	    for (int j = i; j < doubles.size(); j++) {
-		double ith = doubles.get(i).doubleValue();
-		double jth = doubles.get(j).doubleValue();
-		sum += (ith * jth);
-		count++;
+    /** Given a list of INTERCOALESCENCE_TIMES and COUNTER, updates list of 
+     *  current SUMS of E(TiTj) values. */
+    public static void updateList(ArrayList<Double> intercoalescence_times,
+				  ArrayList<Double> sums, double counter) {
+	if (counter == 0) {
+	    buildList(intercoalescence_times, sums);
+	} else {
+	    int index = 0; // keeps track of which ETiTj value we are computing.
+	    for (int i = 0; i < intercoalescence_times.size(); i++) {
+		double time_i = intercoalescence_times.get(i).doubleValue();
+		for (int j = 0; j < intercoalescence_times.size(); j++) {
+		    double time_j = intercoalescence_times.get(j).doubleValue();
+		    double TiTj = time_i * time_j;
+		    double currentsum = sums.get(index).doubleValue();
+		    double newsum = currentsum + TiTj;
+		    sums.set(index, new Double(newsum));
+		    index++;
+		}
 	    }
 	}
-	return (sum / count);
+    }
+
+    /** Similar to updateList method, except that list of INTERCOALESCENCE_TIMES is
+     *  is used to add to list of SUMS rather than update it. */
+    public static void buildList(ArrayList<Double> intercoalescence_times, ArrayList<Double> sums) {
+	for (int i = 0; i < intercoalescence_times.size(); i++) {
+	    double time_i = intercoalescence_times.get(i).doubleValue();
+	    for (int j = 0; j < intercoalescence_times.size(); j++) {
+		double time_j = intercoalescence_times.get(j).doubleValue();
+		double TiTj = time_i * time_j;
+		sums.add(new Double(TiTj));
+	    }
+	}
     }
 
     /** Lists the TIMES of coalescence in the tree with the given ROOT
