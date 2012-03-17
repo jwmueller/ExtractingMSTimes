@@ -57,18 +57,18 @@ public class EstimateCovar {
 	Collections.sort(coalescence_times);
 	// Create list of intercoalescence times (units: 2*N_0 generations) //
 	ArrayList<Double> intercoalescence_times = new ArrayList<Double>();
-	double first_time = coalescence_times.get(0).doubleValue() * 2;
-	intercoalescence_times.add(new Double(first_time));
+	double last_time = coalescence_times.get(0).doubleValue() * 2;
+	intercoalescence_times.add(new Double(last_time));
 	for (int i = 1; i < coalescence_times.size(); i++) {
-	    double last_time = coalescence_times.get(i - 1).doubleValue() * 2;
+	    double prior_time = coalescence_times.get(i - 1).doubleValue() * 2;
 	    double next_time = coalescence_times.get(i).doubleValue() * 2;
-	    double interval = next_time - last_time;
+	    double interval = next_time - prior_time;
 	    if (interval < 0) {
 		// error checking... //
 		System.err.println("Error in times");
 		System.exit(1);
 	    }
-	    intercoalescence_times.add(new Double(interval));
+	    intercoalescence_times.add(0, new Double(interval));
 	}
 	// Use this list to compute E(TiTj) values and them to the list of sums //
 	updateList(intercoalescence_times, sum_list, counter);
@@ -97,7 +97,7 @@ public class EstimateCovar {
     }
 
     /** Similar to updateList method, except that list of INTERCOALESCENCE_TIMES is
-     *  is used to add to list of SUMS rather than update it. */
+     *  is used to build a list of SUMS rather than update it. */
     public static void buildList(ArrayList<Double> intercoalescence_times, ArrayList<Double> sums) {
 	for (int i = 0; i < intercoalescence_times.size(); i++) {
 	    double time_i = intercoalescence_times.get(i).doubleValue();
